@@ -1,6 +1,4 @@
 
-# TEST EDIT
-
 # MARS_Developer
 This repository contains all the code you'll need to train your own version of MARS.
 
