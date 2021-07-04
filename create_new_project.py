@@ -4,20 +4,12 @@ import argparse
 from shutil import copytree
 import requests
 import zipfile
+import gdown
 
 
 def download_from_google_drive(id, destination):
-    URL = "https://drive.google.com/uc?export=download"
-
-    session = requests.Session()
-    response = session.get(URL, params={'id': id}, stream=True)
-    token = get_confirm_token(response)
-
-    if token:
-        params = {'id': id, 'confirm': token}
-        response = session.get(URL, params=params, stream=True)
-    save_response_content(response, destination)
-
+    URL = "https://drive.google.com/uc?id=" + id
+    gdown.download(URL, destination, quiet=False)
 
 def get_confirm_token(response):
     for key, value in response.cookies.items():

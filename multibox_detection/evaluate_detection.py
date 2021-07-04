@@ -97,14 +97,22 @@ def plot_frame(project, frame_num, detector_names=None, markersize=8, figsize=[1
         if not image:
             print("I couldn't fine image " + str(frame_num))
             return
-        matched_id = int(re.search('(?<=image)\d*', image[0]).group(0))
-
+        matched_id = int(re.search('(?<=image)\d*', image[0]).group(0)) - 1800 # NEED TO ADJUST FOR DATASET SPLIT
         infile = os.path.join(project, 'detection', model + '_evaluation', 'performance_detection.json')
         with open(infile) as jsonfile:
             cocodata = json.load(jsonfile)
         pred = [i for i in cocodata['pred_bbox'] if i['image_id'] == matched_id]
         gt = [i for i in cocodata['gt_bbox']['annotations'] if i['image_id'] == matched_id]
-
+        #DEBUG
+        # print(image)
+        # print(matched_id)
+        # ids = []
+        # for i in cocodata['gt_bbox']['annotations']:
+        #     ids.append(i['image_id'])
+        # print(np.unique(np.array(ids)))
+        print(pred)
+        print(gt)
+        #DEBUG
         colors = ['tab:blue', 'tab:orange', 'tab:red', 'tab:brown', 'tab:pink', 'tab:olive', 'tab:cyan']
 
         im = mpimg.imread(image[0])
@@ -112,14 +120,14 @@ def plot_frame(project, frame_num, detector_names=None, markersize=8, figsize=[1
         plt.figure(figsize=figsize)
         plt.imshow(im, cmap='gray')
         for pt in gt:
-            x = np.array([pt['bbox'][0], pt['bbox'][0] + pt['bbox'][2]])/299. * dims[1]
-            y = np.array([pt['bbox'][1], pt['bbox'][1] + pt['bbox'][3]])/299. * dims[0]
+            x = np.array([pt['bbox'][0], pt['bbox'][0] + pt['bbox'][2]]) * dims[1] # deleted the /299.
+            y = np.array([pt['bbox'][1], pt['bbox'][1] + pt['bbox'][3]]) * dims[0] # same as above
             plt.plot([x[0], x[1], x[1], x[0], x[0]], [y[0], y[0], y[1], y[1], y[0]], color=colors[0],
                      label='ground truth' if not legend_flag[0] else None)
             legend_flag[0] = True
         for rank, pt in enumerate(pred):
-            x = np.array([pt['bbox'][0], pt['bbox'][0] + pt['bbox'][2]]) / 299. * dims[1]
-            y = np.array([pt['bbox'][1], pt['bbox'][1] + pt['bbox'][3]]) / 299. * dims[0]
+            x = np.array([pt['bbox'][0], pt['bbox'][0] + pt['bbox'][2]]) * dims[1] # same as above loop
+            y = np.array([pt['bbox'][1], pt['bbox'][1] + pt['bbox'][3]]) * dims[0]
             if rank == 0:
                 plt.plot([x[0], x[1], x[1], x[0], x[0]], [y[0], y[0], y[1], y[1], y[0]], color=colors[1],
                          label='predicted' if not legend_flag[1] else None)

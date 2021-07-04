@@ -15,6 +15,8 @@ from multibox_detection import loss
 from multibox_detection import model_detection as model
 from multibox_detection.config import parse_config_file
 
+from pprint import pprint
+
 # import inputs
 # import loss
 # import model_detection as model
@@ -35,7 +37,6 @@ def get_init_function(logdir, pretrained_model_path, fine_tune, original_incepti
     restore_moving_averages : If True, then the moving average values will also be restored.
     ema : The exponential moving average object
     """
-
     if pretrained_model_path is None:
         return None
 
@@ -49,9 +50,14 @@ def get_init_function(logdir, pretrained_model_path, fine_tune, original_incepti
 
     if tf.gfile.IsDirectory(pretrained_model_path):
         checkpoint_path = tf.train.latest_checkpoint(pretrained_model_path)
+        print('a')
     else:
         checkpoint_path = pretrained_model_path
+        print('b')
 
+    print(pretrained_model_path)
+    print(logdir)
+    print(checkpoint_path)
     tf.logging.info('Fine-tuning from %s' % checkpoint_path)
 
     # Do we need to restore the detection heads?
@@ -105,7 +111,7 @@ def get_init_function(logdir, pretrained_model_path, fine_tune, original_incepti
 def build_fully_trainable_model(inputs, cfg, is_training=True):
     batch_norm_params = {
         'decay': cfg.BATCHNORM_MOVING_AVERAGE_DECAY,
-        'epsilon': 0.001,
+        'epsilon': 0.001, # ORIGINALLY 0.001
         'variables_collections': [tf.compat.v1.GraphKeys.MOVING_AVERAGE_VARIABLES],
         'is_training': is_training
     }
@@ -326,7 +332,7 @@ def train(tfrecords_train, tfrecords_val, bbox_priors, logdir, cfg, pretrained_m
             keep_checkpoint_every_n_hours=cfg.KEEP_CHECKPOINT_EVERY_N_HOURS
         )
 
-        VALIDATION_INTERVAL = 1000  # validate every 1000 steps
+        VALIDATION_INTERVAL = 500  # validate every 1000 steps
 
         def train_step_fn(sess, train_op, global_step, train_step_kwargs):
             train_step_fn.step += 1  # or use global_step.eval(session=sess)
@@ -345,6 +351,7 @@ def train(tfrecords_train, tfrecords_val, bbox_priors, logdir, cfg, pretrained_m
         train_step_fn.step = 0
 
         # Run training.
+        print(cfg.LOG_EVERY_N_STEPS)
         slim.learning.train(train_op, logdir,
                             init_fn=get_init_function(logdir, pretrained_model_path, fine_tune, inception_vars,
                                                       use_moving_averages, restore_moving_averages, ema),
@@ -353,8 +360,13 @@ def train(tfrecords_train, tfrecords_val, bbox_priors, logdir, cfg, pretrained_m
                             save_summaries_secs=cfg.SAVE_SUMMARY_SECS,
                             save_interval_secs=cfg.SAVE_INTERVAL_SECS,
                             saver=saver,
+                            
                             session_config=sess_config,
+                            
+                            
                             summary_op=summary_op,
+
+
                             log_every_n_steps=cfg.LOG_EVERY_N_STEPS
                             )
 
@@ -375,7 +387,6 @@ def run_training(project, detector_names=[], max_training_steps=None, debug_outp
     # allow some command-line override of training epochs/batch size, for troubleshooting:
     if max_training_steps is not None:
         train_cfg.NUM_TRAIN_ITERATIONS = max_training_steps
-
     for detector in detector_names:
         logdir = os.path.join(project, 'detection', detector + '_log')
         if not os.path.isdir(logdir):

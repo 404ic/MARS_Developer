@@ -1,0 +1,10 @@
+1. Tutorial notebook doesn't actually copy project_config, config_train, or config_test files. They were pretty easy to find, but the notebook doesn't say anything about needing to copy it over yourself. I see that a line was commented out that had to do with it. 
+2. project_config is missing the parameters pre_trained_model_path, fine_tune, trainable_scopes, use_moving_averages, and restore_moving_averages. 
+3. Name of fine_tune is somewhat unclear. (The explanation is clear enough in the function that reads them, but from the name, I really thought it meant fine tune an existing model.)
+4. The function that saves the best model based on validation loss isn't working (correctly) for me, which I think is because the model isn't checking the correct checkpoints.
+5. I had some problems training the pose estimator. Also it looks like the default batch size is 8? Which gave me an OutOfResource error, but I'm not 100% sure if that's because of a code problem or a memory problem. Should probably make the default a bit lower.
+6. The evaluation/plotting cells of the notebook for the pose estimator don't work for me.
+7. The test set ID retriever doesn't work because the last 10% of the IDs are grabbed and indexed from 0 to N*0.1-1, but in the dataset I think they are indexed from N*0.9+1 to N. I just added -1800 in the code, but should probably actually fix it. 
+8. The installation command for the MARS_pycocotools is wrong (Linux) — I think you need to add a backslash before the "&subdirectory." Also it would be nice to just integrate it into the MARS_Developer folder directly because currently there's no easy-to-find reference to it. 
+9. The Google Drive download stopped working so I used the gdown library instead, so if you keep that you should add it to the mars_dev configuration file for conda environment.
+10. See test_project.ipynb for more.

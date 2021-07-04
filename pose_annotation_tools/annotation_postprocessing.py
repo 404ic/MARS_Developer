@@ -1,4 +1,9 @@
+import pose_annotation_tools.tfrecord_util
+import importlib
+importlib.reload(pose_annotation_tools.tfrecord_util)
 from pose_annotation_tools.tfrecord_util import *
+import pose_annotation_tools.json_util
+importlib.reload(pose_annotation_tools.json_util)
 from pose_annotation_tools.json_util import *
 from pose_annotation_tools.priors_generator import *
 import random
@@ -8,6 +13,8 @@ import os
 import glob
 import argparse
 import shutil
+
+from pprint import pprint
 
 
 def make_clean_dir(output_dir):
@@ -53,10 +60,18 @@ def prepare_detector_training_data(project):
         output_dir = os.path.join(project, 'detection', detector + '_tfrecords_detection')
         make_clean_dir(output_dir)
         v_info = prep_records_detection(D, detector_list[detector])
+        pprint(type(v_info))
+        pprint(type(v_info[0]))
+        pprint(v_info[0])
         write_to_tfrecord(v_info, output_dir)
 
         if config['verbose']:
             print('done.')
+
+def prepare_detector_training_data_2(project, v_info, color):
+    output_dir = os.path.join(project, 'detection', color + '_tfrecords_detection')
+    make_clean_dir(output_dir)
+    write_to_tfrecord(v_info, output_dir)
 
 
 def prepare_pose_training_data(project):
@@ -94,6 +109,17 @@ def prepare_pose_training_data(project):
         if config['verbose']:
             print('done.')
 
+def prepare_pose_training_data2(project, v_info, color):
+    output_dir = os.path.join(project, 'pose', pose + '_tfrecords_pose')
+    make_clean_dir(output_dir)
+    if os.path.exists(os.path.join(project, 'annotation_data', 'test_sets')):  # remove old test sets if we had them.
+        shutil.rmtree(os.path.join(project, 'annotation_data', 'test_sets'))
+    v_info = prep_records_pose(D, pose_list[pose])
+    write_to_tfrecord(v_info, output_dir)
+
+    if config['verbose']:
+        print('done.')
+
 
 def make_project_priors(project):
 
@@ -108,9 +134,11 @@ def make_project_priors(project):
     for detector in detector_names:
         if config['verbose']:
             print('Generating ' + detector + ' priors...')
-
         output_dir = os.path.join(project, 'detection', detector + '_tfrecords_detection')
         record_list = glob.glob(os.path.join(output_dir, 'train_dataset-*'))
+        print(os.path.join(output_dir, 'train_dataset-*'))
+        print('yeet')
+        print(record_list)
         priors = generate_priors_from_data(dataset=record_list)
 
         with open(os.path.join(project, 'detection', 'priors_' + detector + '.pkl'), 'wb') as fp:
@@ -132,8 +160,9 @@ def annotation_postprocessing(project):
     --------
     """
     # extract info from annotations into an intermediate dictionary file
+    print('Hello world')
     make_annot_dict(project)
-
+    print('Finished making .json')
     # save tfrecords
     prepare_detector_training_data(project)
     prepare_pose_training_data(project)
