@@ -60,9 +60,6 @@ def prepare_detector_training_data(project):
         output_dir = os.path.join(project, 'detection', detector + '_tfrecords_detection')
         make_clean_dir(output_dir)
         v_info = prep_records_detection(D, detector_list[detector])
-        pprint(type(v_info))
-        pprint(type(v_info[0]))
-        pprint(v_info[0])
         write_to_tfrecord(v_info, output_dir)
 
         if config['verbose']:
@@ -136,9 +133,6 @@ def make_project_priors(project):
             print('Generating ' + detector + ' priors...')
         output_dir = os.path.join(project, 'detection', detector + '_tfrecords_detection')
         record_list = glob.glob(os.path.join(output_dir, 'train_dataset-*'))
-        print(os.path.join(output_dir, 'train_dataset-*'))
-        print('yeet')
-        print(record_list)
         priors = generate_priors_from_data(dataset=record_list)
 
         with open(os.path.join(project, 'detection', 'priors_' + detector + '.pkl'), 'wb') as fp:
@@ -160,9 +154,7 @@ def annotation_postprocessing(project):
     --------
     """
     # extract info from annotations into an intermediate dictionary file
-    print('Hello world')
     make_annot_dict(project)
-    print('Finished making .json')
     # save tfrecords
     prepare_detector_training_data(project)
     prepare_pose_training_data(project)

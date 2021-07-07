@@ -32,9 +32,10 @@ def plot_frame(project, fr, markersize=8, figsize=[15, 10]):
     for mouse in config['animal_names']:
         for w, [x, y] in enumerate(zip(D[fr]['ann_' + mouse]['X'], D[fr]['ann_' + mouse]['Y'])):
             for i, [px, py] in enumerate(zip(x, y)):
+                print(colors[i % 9])
                 plt.plot(px * D[fr]['width'], py * D[fr]['height'],
                          colors[i % 9], marker=markers[w % 6], markersize=markersize)
-                print(px * D[fr]['width'], py * D[fr]['height'], px, py, D[fr]['width'], D[fr]['height'])
+                # print(px * D[fr]['width'], py * D[fr]['height'], px, py, D[fr]['width'], D[fr]['height'])
         for i, [px, py] in enumerate(zip(D[fr]['ann_' + mouse]['med'][1], D[fr]['ann_' + mouse]['med'][0])):
             plt.plot(np.array(px) * D[fr]['width'], np.array(py) * D[fr]['height'],
                      'k', marker='o', markeredgecolor='w', markeredgewidth=math.sqrt(markersize), markersize=markersize)

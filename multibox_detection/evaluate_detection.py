@@ -97,7 +97,7 @@ def plot_frame(project, frame_num, detector_names=None, markersize=8, figsize=[1
         if not image:
             print("I couldn't fine image " + str(frame_num))
             return
-        matched_id = int(re.search('(?<=image)\d*', image[0]).group(0)) - 1800 # NEED TO ADJUST FOR DATASET SPLIT
+        matched_id = int(re.search('(?<=image)\d*', image[0]).group(0)) - 13500 # NEED TO ADJUST FOR DATASET SPLIT
         infile = os.path.join(project, 'detection', model + '_evaluation', 'performance_detection.json')
         with open(infile) as jsonfile:
             cocodata = json.load(jsonfile)
@@ -111,7 +111,7 @@ def plot_frame(project, frame_num, detector_names=None, markersize=8, figsize=[1
         #     ids.append(i['image_id'])
         # print(np.unique(np.array(ids)))
         print(pred)
-        print(gt)
+        # print(gt)
         #DEBUG
         colors = ['tab:blue', 'tab:orange', 'tab:red', 'tab:brown', 'tab:pink', 'tab:olive', 'tab:cyan']
 
