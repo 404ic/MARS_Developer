@@ -51,7 +51,8 @@ def prepare_detector_training_data(project):
         make_annot_dict(project)
     with open(dictionary_file_path, 'r') as fp:
         D = json.load(fp)
-    random.shuffle(D)
+    print('DID NOT SHUFFLE')
+    # random.shuffle(D)
 
     for detector in detector_names:
         if config['verbose']:
@@ -90,7 +91,7 @@ def prepare_pose_training_data(project):
         make_annot_dict(project)
     with open(dictionary_file_path, 'r') as fp:
         D = json.load(fp)
-    random.shuffle(D)
+    # random.shuffle(D)
 
     for pose in pose_names:
         if config['verbose']:
