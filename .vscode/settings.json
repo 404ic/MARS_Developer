@@ -1,3 +1,4 @@
 {
-    "python.pythonPath": "/home/cristina/anaconda3/envs/mars_dev/bin/python"
+    "python.pythonPath": "/home/cristina/anaconda3/envs/mars_dev/bin/python",
+    "jupyter.jupyterServerType": "local"
 }

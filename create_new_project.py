@@ -2,7 +2,6 @@ import os, sys
 import pathlib
 import argparse
 from shutil import copytree
-import requests
 import zipfile
 import gdown
 

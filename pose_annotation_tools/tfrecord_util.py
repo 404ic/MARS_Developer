@@ -45,21 +45,21 @@ def write_to_tfrecord(v_info, output_directory):
         output_directory=output_directory,
         num_shards=n_shards, 
         num_threads=n_threads, 
-        shuffle=False
+        shuffle=True
     )
 
     create(
         dataset=val,
         dataset_name="val_dataset",
         output_directory=output_directory,
-        num_shards=1, num_threads=1, shuffle=False
+        num_shards=1, num_threads=1, shuffle=True
     )
 
     create(
         dataset=test,
         dataset_name="test_dataset",
         output_directory=output_directory,
-        num_shards=1, num_threads=1, shuffle=False
+        num_shards=1, num_threads=1, shuffle=True
     )
 
 

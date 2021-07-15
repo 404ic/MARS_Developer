@@ -19,6 +19,7 @@ import copy
 import glob
 import re
 import shutil
+from pprint import pprint
 
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
@@ -170,7 +171,7 @@ def compute_model_pck(cocoEval, lims=None, pixels_per_cm=None, pixel_units=False
     counts = counts / len(pck)
     binctrs = (binedges[:-1] + binedges[1:]) / 2
     if not pixel_units:
-        binctrs = binctrs / pixels_per_cm
+        binctrs = (np.array(binctrs) / pixels_per_cm).tolist()
 
     return counts, binctrs
 
@@ -716,8 +717,9 @@ def evaluation(tfrecords, summary_dir, checkpoint_path, cfg,
             gt_image_id = 1
             try:
                 if tf.io.gfile.isdir(checkpoint_path):
-                    print(checkpoint_path)
                     checkpoint_path = tf.train.latest_checkpoint(checkpoint_path)
+                    # checkpoint_path = '/home/ericma/Documents/reproduce_pose/pose/top_model/model.ckpt-539952'
+                    checkpoint_path = '/home/ericma/Documents/reproduce_pose/pose/top_log/model.ckpt-85'
                     print(''.join(['is now:', checkpoint_path]))
 
                 if checkpoint_path is None:
@@ -770,7 +772,7 @@ def evaluation(tfrecords, summary_dir, checkpoint_path, cfg,
                         bbox = outputs[0][b]
                         parts = outputs[1][b]
                         part_visibilities = outputs[2][b]
-                        image_id = outputs[3][b]
+                        image_id = str(outputs[3][b][0])[2:-1]
                         image_height_widths = outputs[4][b]
                         crop_bboxes = outputs[5][b]
                         heatmaps = outputs[-1][b]
@@ -790,14 +792,14 @@ def evaluation(tfrecords, summary_dir, checkpoint_path, cfg,
                                     os.makedirs(savedir)
                                 if fig_heatmaps:
                                     fig_heatmaps.savefig(
-                                        os.path.join(savedir, str(image_id[0]) + '_' + str(step) + 'heatmaps.png'))
+                                        os.path.join(savedir, str(image_id) + '_' + str(step) + 'heatmaps.png'))
                                     fig_heatmaps.savefig(
-                                        os.path.join(savedir, str(image_id[0]) + '_' + str(step) + 'heatmaps.pdf'))
+                                        os.path.join(savedir, str(image_id) + '_' + str(step) + 'heatmaps.pdf'))
                                 if fig_layers:
                                     fig_layers.savefig(
-                                        os.path.join(savedir, str(image_id[0]) + '_' + str(step) + 'layers.png'))
+                                        os.path.join(savedir, str(image_id) + '_' + str(step) + 'layers.png'))
                                     fig_layers.savefig(
-                                        os.path.join(savedir, str(image_id[0]) + '_' + str(step) + 'layers.pdf'))
+                                        os.path.join(savedir, str(image_id) + '_' + str(step) + 'layers.pdf'))
                             elif r != "":
                                 done = True
                                 break
@@ -846,7 +848,7 @@ def evaluation(tfrecords, summary_dir, checkpoint_path, cfg,
                             pred_parts += [x, y, v]
                             # and as separate entries of pred_annotations for part-wise evaluation
                             pred_annotations.append({
-                                'image_id': image_id,
+                                'image_id': str(image_id),
                                 'keypoints': [x, y, v],
                                 'score': selected_scores[-1],
                                 'category_id': count + 2
@@ -855,7 +857,7 @@ def evaluation(tfrecords, summary_dir, checkpoint_path, cfg,
                         avg_score = np.mean(selected_scores)
                         # Store the results
                         pred_annotations.append({
-                            'image_id': image_id,
+                            'image_id': str(image_id),
                             'keypoints': pred_parts,
                             'score': avg_score.item(),
                             'category_id': 1
@@ -877,7 +879,7 @@ def evaluation(tfrecords, summary_dir, checkpoint_path, cfg,
                         for eval_part in range(int(np.sum(part_visibilities > 0))):
                             gt_annotations.append({
                                 "id": gt_annotation_id,
-                                "image_id": image_id,
+                                "image_id": str(image_id),
                                 "category_id": eval_part + 2,
                                 "area": (w * h).item(),
                                 "bbox": [x1.item(), y1.item(), w.item(), h.item()],
@@ -887,7 +889,7 @@ def evaluation(tfrecords, summary_dir, checkpoint_path, cfg,
                             })
                         gt_annotations.append({
                             "id": gt_annotation_id,
-                            "image_id": image_id,
+                            "image_id": str(image_id),
                             "category_id": 1,
                             "area": (w * h).item(),
                             "bbox": [x1.item(), y1.item(), w.item(), h.item()],
@@ -896,7 +898,7 @@ def evaluation(tfrecords, summary_dir, checkpoint_path, cfg,
                             "num_keypoints": int(np.sum(part_visibilities > 0))
                         })
 
-                        dataset_image_ids.add(image_id)
+                        dataset_image_ids.add(str(image_id))
 
                         gt_annotation_id += 1
 
@@ -927,6 +929,7 @@ def evaluation(tfrecords, summary_dir, checkpoint_path, cfg,
             if os.path.exists(os.path.join(summary_dir, 'performance_pose.json')):
                 os.remove(os.path.join(summary_dir, 'performance_pose.json'))
             with open(os.path.join(summary_dir, 'performance_pose.json'), 'w') as jsonfile:
+                # print(cocodata)
                 json.dump(cocodata, jsonfile)
 
 
@@ -962,7 +965,7 @@ def run_test(project, pose_model_names=None, num_images=0, show_heatmaps=False, 
             os.mkdir(summary_dir)
 
         cfg = parse_config_file(os.path.join(project, 'pose', 'config_test.yaml'))
-
+        print(checkpoint_path)
         evaluation(
             tfrecords=tfrecords,
             summary_dir=summary_dir,
