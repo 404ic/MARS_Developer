@@ -38,8 +38,6 @@ def write_to_tfrecord(v_info, output_directory):
     n_threads = n_shards if n_shards <= multiprocessing.cpu_count() else (n_shards / smallest_factor(n_shards))
     n_threads = int(n_threads)
     n_shards = int(n_shards)
-    print(n_threads)
-    print(n_shards)
     create(dataset=train,
         dataset_name="train_dataset",
         output_directory=output_directory,

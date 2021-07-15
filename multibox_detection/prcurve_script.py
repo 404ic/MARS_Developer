@@ -15,6 +15,9 @@ from config import *
 path = "/home/ericma/MARS_Developer/multibox_detection/"
 save_name = path + 'pr_curve'
 log_path = '/home/ericma/Documents/separate/separate_coco_eval_on_self.pkl'
+path = "/home/cristina/Desktop/ericykma/m_dev_fork/MARS_Developer/multibox_detection/"
+save_name = path + 'pr_curve'
+log_path = '/home/cristina/Desktop/ericykma/annotation_budget_projects/median/detectioncocoEval.pkl'
 with open(log_path, 'rb') as fp: cocoEval = pickle.load(fp)
 print('loaded')
 

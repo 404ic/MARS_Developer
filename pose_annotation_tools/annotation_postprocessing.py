@@ -51,6 +51,7 @@ def prepare_detector_training_data(project):
         make_annot_dict(project)
     with open(dictionary_file_path, 'r') as fp:
         D = json.load(fp)
+    print('DID NOT SHUFFLE')
     # random.shuffle(D)
 
     for detector in detector_names:

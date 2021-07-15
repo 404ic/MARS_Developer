@@ -94,14 +94,17 @@ def plot_frame(project, frame_num, detector_names=None, markersize=8, figsize=[1
             restore_images_from_tfrecord.restore(tfrecords, test_images)  # pull all the images so we can look at them
 
         image = glob.glob(os.path.join(test_images, 'test' + f'{frame_num:07d}' + '*'))
+        print(image)
         if not image:
-            print("I couldn't fine image " + str(frame_num))
+            print("I couldn't find image " + str(frame_num))
             return
         matched_id = int(re.search('(?<=image)\d*', image[0]).group(0)) - 13500 # NEED TO ADJUST FOR DATASET SPLIT
+        print(matched_id)
         infile = os.path.join(project, 'detection', model + '_evaluation', 'performance_detection.json')
         with open(infile) as jsonfile:
             cocodata = json.load(jsonfile)
         pred = [i for i in cocodata['pred_bbox'] if i['image_id'] == matched_id]
+        # print(pred)
         gt = [i for i in cocodata['gt_bbox']['annotations'] if i['image_id'] == matched_id]
         #DEBUG
         # print(image)
@@ -110,7 +113,6 @@ def plot_frame(project, frame_num, detector_names=None, markersize=8, figsize=[1
         # for i in cocodata['gt_bbox']['annotations']:
         #     ids.append(i['image_id'])
         # print(np.unique(np.array(ids)))
-        print(pred)
         # print(gt)
         #DEBUG
         colors = ['tab:blue', 'tab:orange', 'tab:red', 'tab:brown', 'tab:pink', 'tab:olive', 'tab:cyan']
@@ -197,46 +199,48 @@ def smooth(xran, tran, decay=0.99, burnIn=0):
 
 
 def find_best_checkpoint(project, model, decay=0.99975, burnIn=1000):
-    event_path = os.path.join(project, 'detection', model + '_log')
+    # event_path = os.path.join(project, 'detection', model + '_log')
 
-    ckptfiles = glob.glob(os.path.join(event_path, 'model.ckpt-*.index'))
-    ckptfiles = ['.'.join(f.split('.')[:-1]) for f in ckptfiles]
-    ckpt_steps = np.array([int(c) for text in ckptfiles for c in re.compile(r'\d+').findall(os.path.basename(text))])
+    # ckptfiles = glob.glob(os.path.join(event_path, 'model.ckpt-*.index'))
+    # ckptfiles = ['.'.join(f.split('.')[:-1]) for f in ckptfiles]
+    # ckpt_steps = np.array([int(c) for text in ckptfiles for c in re.compile(r'\d+').findall(os.path.basename(text))])
 
-    event_path = os.path.join(project, 'detection', model + '_log')
-    eventfiles = glob.glob(os.path.join(event_path, 'events.out.tfevents.*'))
-    eventfiles.sort(key=lambda text: [int(c) for c in re.compile(r'\d+').findall(text)])
+    # event_path = os.path.join(project, 'detection', model + '_log')
+    # eventfiles = glob.glob(os.path.join(event_path, 'events.out.tfevents.*'))
+    # eventfiles.sort(key=lambda text: [int(c) for c in re.compile(r'\d+').findall(text)])
 
-    onlyfiles = [f for f in os.listdir(event_path) if os.path.isfile(os.path.join(event_path, f))]
-    onlyckpts = ['.'.join(f.split('.')[:-1]) for f in onlyfiles if 'index' in f]
-    onlyckpts.sort(key=lambda text: [int(c) for c in re.compile(r'\d+').findall(text)])
+    # onlyfiles = [f for f in os.listdir(event_path) if os.path.isfile(os.path.join(event_path, f))]
+    # onlyckpts = ['.'.join(f.split('.')[:-1]) for f in onlyfiles if 'index' in f]
+    # onlyckpts.sort(key=lambda text: [int(c) for c in re.compile(r'\d+').findall(text)])
 
-    sz = {event_accumulator.IMAGES: 0}
-    steps = np.empty(shape=(0))
-    vals = np.empty(shape=(0))
-    for f in eventfiles:
-        ea = event_accumulator.EventAccumulator(f, size_guidance=sz)
-        ea.Reload()
+    # sz = {event_accumulator.IMAGES: 0}
+    # steps = np.empty(shape=(0))
+    # vals = np.empty(shape=(0))
+    # for f in eventfiles:
+    #     ea = event_accumulator.EventAccumulator(f, size_guidance=sz)
+    #     ea.Reload()
 
-        if not ea.Tags()['scalars'] or not 'validation_loss' in ea.Tags()['scalars']: # skip empty event files
-            continue
+    #     if not ea.Tags()['scalars'] or not 'validation_loss' in ea.Tags()['scalars']: # skip empty event files
+    #         continue
 
-        tr_steps = np.array([step.step for step in ea.Scalars('validation_loss')]).T
-        tr_vals = np.array([step.value for step in ea.Scalars('validation_loss')]).T
+    #     tr_steps = np.array([step.step for step in ea.Scalars('validation_loss')]).T
+    #     tr_vals = np.array([step.value for step in ea.Scalars('validation_loss')]).T
 
-        steps = np.concatenate((steps, tr_steps))
-        vals = np.concatenate((vals, tr_vals))
-    inds = np.argsort(steps)
-    steps = steps[inds]
-    vals = vals[inds]
+    #     steps = np.concatenate((steps, tr_steps))
+    #     vals = np.concatenate((vals, tr_vals))
+    # inds = np.argsort(steps)
+    # steps = steps[inds]
+    # vals = vals[inds]
 
-    sm_vals = smooth(vals, steps, decay, burnIn)
-    step_inds = [np.where(steps == k) for k in ckpt_steps]
-    step_inds = [x[0][0] for x in step_inds if len(x[0])]
-    min_step = steps[np.where(sm_vals == np.amin(sm_vals[step_inds]))[0][0]]
+    # sm_vals = smooth(vals, steps, decay, burnIn)
+    # step_inds = [np.where(steps == k) for k in ckpt_steps]
+    # step_inds = [x[0][0] for x in step_inds if len(x[0])]
+    # min_step = steps[np.where(sm_vals == np.amin(sm_vals[step_inds]))[0][0]]
 
-    params = {'burnIn': burnIn, 'decay': decay}
-    return steps, vals, ckpt_steps, min_step, params
+    # params = {'burnIn': burnIn, 'decay': decay}
+    # return steps, vals, ckpt_steps, min_step, params
+
+    return 1, 1, 1, sorted(glob.glob(os.path.join(project, 'detection', model + '_log', '*')))[-1].split('-')[1].split('.')[0], 1
 
 
 def save_best_checkpoint(project, detector_names=None):
