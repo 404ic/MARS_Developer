@@ -36,7 +36,7 @@ from tensorboard.backend.event_processing import event_accumulator
 deprecation._PRINT_DEPRECATION_WARNINGS = False
 
 
-def coco_eval(project, pose_model_names=None, view=None, fixedSigma=None):
+def coco_eval(project, pose_model_names=None, view=None, fixedSigma=None, ckpt_num=None):
     config_fid = os.path.join(project,'project_config.yaml')
     with open(config_fid) as f:
         cfg = yaml.load(f, Loader=yaml.FullLoader)
@@ -50,8 +50,10 @@ def coco_eval(project, pose_model_names=None, view=None, fixedSigma=None):
     savedEvals = {n: {} for n in pose_model_names}
 
     for model in pose_model_names:
-
-        infile = os.path.join(project, 'pose', model+'_evaluation', 'performance_pose.json')
+        if ckpt_num is None:
+            print('ERROR: coco_eval - ckpt_num should not be None')
+            return
+        infile = os.path.join(project, 'pose', model+'_evaluation', str(ckpt_num) + '_performance_pose.json')
         with open(infile) as jsonfile:
             cocodata = json.load(jsonfile)
         gt_keypoints = cocodata['gt_keypoints']
@@ -91,7 +93,7 @@ def coco_eval(project, pose_model_names=None, view=None, fixedSigma=None):
     return savedEvals
 
 
-def plot_frame(project, frame_num, pose_model_names=None, markersize=8, figsize=[15, 10]):
+def plot_frame(project, frame_num, pose_model_names=None, markersize=8, figsize=[15, 10], perf_pose=None):
     config_fid = os.path.join(project, 'project_config.yaml')
     with open(config_fid) as f:
         cfg = yaml.load(f, Loader=yaml.FullLoader)
@@ -105,27 +107,32 @@ def plot_frame(project, frame_num, pose_model_names=None, markersize=8, figsize=
         animals_per_image = len(cfg['pose'][model])
         test_images = os.path.join(project, 'annotation_data', 'test_sets', model + '_pose')
         if not os.path.exists(test_images):
-            tfrecords = glob.glob(os.path.join(project,'pose', model + '_tfrecords_pose', 'test*'))
+            tfrecords = [glob.glob(os.path.join(project,'pose', model + '_tfrecords_pose', 'test*'))]
+            print(tfrecords)
             for record in tfrecords:
                 restore_images_from_tfrecord.restore(record, test_images)  # pull all the images so we can look at them
-
-        image = glob.glob(os.path.join(test_images, 'test' + f'{frame_num:07d}' + '*'))
+        frame_num = int(frame_num)
+        image = glob.glob(os.path.join(test_images, 'test*_image' + f'{frame_num:07d}' + '*'))
         if not image:
             print("I couldn't fine image " + str(frame_num))
             return
-        matched_id = re.search('(?<=image)\d*',image[0])
-
-        infile = os.path.join(project, 'pose', model + '_evaluation', 'performance_pose.json')
+        # matched_id = re.search('(?<=image)\d*',image[0])
+        # print('matched id:', matched_id)
+        matched_id = frame_num
+        infile = ''
+        if perf_pose is None:
+            infile = os.path.join(project, 'pose', model + '_evaluation', 'performance_pose.json')
+        else:
+            infile = perf_pose
         with open(infile) as jsonfile:
             cocodata = json.load(jsonfile)
-        pred = [i for i in cocodata['pred_keypoints'] if i['category_id'] == 1 and i['image_id'] == matched_id]
-        gt = [i for i in cocodata['gt_keypoints']['annotations'] if i['category_id'] == 1 and i['image_id'] == matched_id]
-
+        pred = [i for i in cocodata['pred_keypoints'] if i['category_id'] == 1 and int(i['image_id']) == matched_id]
+        gt = [i for i in cocodata['gt_keypoints']['annotations'] if i['category_id'] == 1 and int(i['image_id']) == matched_id]
         colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:brown', 'tab:pink', 'tab:olive', 'tab:cyan']
-
+        print('Frame', matched_id, 'with score of', pred[0]['score'])
         im = mpimg.imread(image[0])
-        plt.figure(figsize=figsize)
-        plt.imshow(im, cmap='gray')
+        fig, ax = plt.subplots(figsize=figsize)
+        ax.imshow(im, cmap='gray')
 
         for pt in gt:
             for i, [x, y] in enumerate(zip(pt['keypoints'][::3], pt['keypoints'][1::3])):
@@ -140,9 +147,11 @@ def plot_frame(project, frame_num, pose_model_names=None, markersize=8, figsize=
                          label='predicted' if not legend_flag[1] else None)
                 legend_flag[1] = True
 
-        plt.legend(prop={'size': 14})
-        plt.show()
-
+        ax.legend(prop={'size': 14})
+        ax.title.set_text('Frame ' + str(matched_id) + ' with score of ' + str(pred[0]['score']))
+        title = 'frame_' + str(matched_id) + '_model_' + perf_pose.split('/')[-1].split('_')[0] + '.png'
+        # fig.savefig(os.path.join(project, 'pose', 'worst_frames', title))
+        return ax
 
 def compute_oks_histogram(cocoEval, bins=[]):
     oks = []
@@ -177,7 +186,7 @@ def compute_model_pck(cocoEval, lims=None, pixels_per_cm=None, pixel_units=False
 
 
 def plot_model_PCK(project, performance=None, pose_model_names=None, xlim=None, pixel_units=False,
-                   combine_animals=False, print_PCK_values=False, custom_PCK_values=None):
+                   combine_animals=False, print_PCK_values=False, custom_PCK_values=None, ckpt_num=None, iteration=None):
 
     config_fid = os.path.join(project, 'project_config.yaml')
     with open(config_fid) as f:
@@ -195,7 +204,7 @@ def plot_model_PCK(project, performance=None, pose_model_names=None, xlim=None, 
         pose_model_names = list(pose_model_list.keys())
 
     if not performance:
-        performance = coco_eval(project, pose_model_names=pose_model_names)
+        performance = coco_eval(project, pose_model_names=pose_model_names, ckpt_num=ckpt_num)
 
     nKpts = len(cfg['keypoints'])
     fig, ax = plt.subplots(math.ceil(nKpts / 4), 4, figsize=(15, 4 * math.ceil(nKpts / 4)))
@@ -282,8 +291,10 @@ def plot_model_PCK(project, performance=None, pose_model_names=None, xlim=None, 
         else:
             plt.xlabel('error radius (pixels)')
         plt.show()
-        fig.savefig(os.path.join(project, 'pose', model + '_evaluation', 'PCK_curves.pdf'), bbox_inches='tight')
-
+        if iteration is None:
+            fig.savefig(os.path.join(project, 'pose', model + '_evaluation', str(ckpt_num) + '_PCK_curves.pdf'), bbox_inches='tight')
+        else:
+            fig.savefig(os.path.join(project, 'pose', model + '_evaluation', str(ckpt_num) + '_PCK_curves_iteration_' + str(iteration) + '.pdf'), bbox_inches='tight')
 
 def get_local_maxima(data, x_offset, y_offset, input_width, input_height, image_width, image_height, threshold=0.000002,
                      neighborhood_size=15):
@@ -626,7 +637,7 @@ def plot_training_progress(project, pose_model_names=None, figsize=(14, 6), logT
 
 
 def evaluation(tfrecords, summary_dir, checkpoint_path, cfg,
-               num_images=0, show_heatmaps=False, show_layer_heatmaps=False):
+               num_images=0, show_heatmaps=False, show_layer_heatmaps=False, ckpt_num=None, iteration=None):
 
     partNames = cfg['PARTS']['NAMES']  # these should match the names of parts we have sigmas for in MARS_pycocotools
 
@@ -718,8 +729,11 @@ def evaluation(tfrecords, summary_dir, checkpoint_path, cfg,
             try:
                 if tf.io.gfile.isdir(checkpoint_path):
                     checkpoint_path = tf.train.latest_checkpoint(checkpoint_path)
-                    # checkpoint_path = '/home/ericma/Documents/reproduce_pose/pose/top_model/model.ckpt-539952'
-                    checkpoint_path = '/home/ericma/Documents/reproduce_pose/pose/top_log/model.ckpt-85'
+                    if ckpt_num is not None:
+                        checkpoint_path = '/home/ericma/Documents/reproduce_pose/pose/top_log/model.ckpt-' + str(ckpt_num)
+                    else:
+                        print('MUST CALL WITH CHECKPOINT NUMBER')
+                        return
                     print(''.join(['is now:', checkpoint_path]))
 
                 if checkpoint_path is None:
@@ -928,12 +942,15 @@ def evaluation(tfrecords, summary_dir, checkpoint_path, cfg,
                         'partNames': partNames}
             if os.path.exists(os.path.join(summary_dir, 'performance_pose.json')):
                 os.remove(os.path.join(summary_dir, 'performance_pose.json'))
-            with open(os.path.join(summary_dir, 'performance_pose.json'), 'w') as jsonfile:
-                # print(cocodata)
-                json.dump(cocodata, jsonfile)
+            if iteration is None:
+                with open(os.path.join(summary_dir, str(ckpt_num) + '_performance_pose.json'), 'w') as jsonfile:
+                    json.dump(cocodata, jsonfile)
+            else:
+                with open(os.path.join(summary_dir, str(ckpt_num) + '_performance_pose_iteration' + str(iteration) + '.json'), 'w') as jsonfile:
+                    json.dump(cocodata, jsonfile)
 
 
-def run_test(project, pose_model_names=None, num_images=0, show_heatmaps=False, show_layer_heatmaps=False):
+def run_test(project, pose_model_names=None, num_images=0, show_heatmaps=False, show_layer_heatmaps=False, ckpt_num=None, iteration=None):
     config_fid = os.path.join(project, 'project_config.yaml')
     with open(config_fid) as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
@@ -966,6 +983,9 @@ def run_test(project, pose_model_names=None, num_images=0, show_heatmaps=False, 
 
         cfg = parse_config_file(os.path.join(project, 'pose', 'config_test.yaml'))
         print(checkpoint_path)
+        if ckpt_num is None:
+            print('ERROR: Must provide checkpoint number')
+            return
         evaluation(
             tfrecords=tfrecords,
             summary_dir=summary_dir,
@@ -973,12 +993,98 @@ def run_test(project, pose_model_names=None, num_images=0, show_heatmaps=False, 
             num_images=num_images,
             show_heatmaps=False,
             show_layer_heatmaps=False,
-            cfg=cfg
+            cfg=cfg,
+            ckpt_num=ckpt_num,
+            iteration=None
         )
 
-        performance[model] = coco_eval(project, pose_model_names=pose_model_names)
+        performance[model] = coco_eval(project, pose_model_names=pose_model_names, ckpt_num=ckpt_num)
 
     return performance
+
+def clean_coords(x):
+    y = []
+    for i in range(len(x)):
+        if (i + 1) % 3 == 0:
+            continue
+        else:
+            y.append(x[i])
+    return y
+
+def distance_between_keypoints(a, b):
+    return np.sqrt(np.sum(np.square(np.array(clean_coords[a]) - np.array(clean_coords[b]))))
+
+def plot_score_vs_accuracy(project, ckpt_num, iteration=None):
+    infile = os.path.join(project, 'pose', 'top_evaluation', str(ckpt_num) + '_performance_pose.json')
+    with open(infile) as jsonfile:
+        D = json.load(jsonfile)
+
+    gt_keypoints = D['gt_keypoints']['annotations']
+    pred_keypoints = D['pred_keypoints']
+
+    assert len(gt_keypoints) == len(pred_keypoints), 'Lengths of predicted and ground truth keypoints don\'t match'
+
+    data = []
+
+    for i in range(len(gt_keypoints)):
+        gt = gt_keypoints[i]
+        pred = pred_keypoints[i]
+        assert gt['image_id'] == pred['image_id'], 'Image IDs do not match'
+        assert gt['category_id'] == pred['category_id'], 'Category IDs do not match'
+        if gt['category_id'] == 8:
+            continue
+        data.append([distance_between_keypoints(gt['keypoints'], pred['keypoints']),
+            pred['score']]
+        )
+    data.sort(key = lambda pt: pt[1])
+    data = np.array(data)
+    plt.scatter(np.log10(data[:,0]), data[:,1], s=4)
+    plt.xlabel('log (10) distance between keypoints')
+    plt.ylabel('model calculated score')
+    if iteration is None:
+        plt.savefig(os.path.join(project, 'pose', 'top_evaluation', str(ckpt_num) + '_scatter.png'))
+    else:
+        plt.savefig(os.path.join(project, 'pose', 'top_evaluation', str(ckpt_num) + '_scatter_iteration_' + str(iteration) + '.png'))
+    print('Plot created')
+    plt.clf()
+
+from IPython.display import display_html
+def restartkernel() :
+    display_html("<script>Jupyter.notebook.kernel.restart()</script>",raw=True)
+
+# def evaluate_all_checkpoints(project):
+#     log = os.path.join(project, 'pose', 'top_log')
+#     ckpt_nums = glob.glob(os.path.join(log, 'model.ckpt-*'))
+#     ckpt_nums = [num for num in ckpt_nums if 'index' not in num and 'data' not in num]
+#     ckpt_nums = [int(num.split('-')[1].split('.')[0]) for num in ckpt_nums]
+#     ckpt_nums.sort()
+#     ckpt_nums = ckpt_nums[0:2]
+#     print(ckpt_nums)
+#     for ckpt_num in ckpt_nums:
+#         restartkernel()
+#         print('============================================================')
+#         print('Processing model', ckpt_num)
+#         run_test(project, ckpt_num=ckpt_num)
+#         plot_model_PCK(project, ckpt_num=ckpt_num)
+#         plot_score_vs_accuracy(project=project, ckpt_num=ckpt_num)
+#         print('============================================================')
+#     return
+
+def evaluate_last_checkpoint_AL(project):
+    log = os.path.join(project, 'pose', 'top_log')
+    ckpt_nums = glob.glob(os.path.join(log, 'model.ckpt-*'))
+    ckpt_nums = [num for num in ckpt_nums if 'index' not in num and 'data' not in num]
+    ckpt_nums = [int(num.split('-')[1].split('.')[0]) for num in ckpt_nums]
+    ckpt_nums.sort()
+    ckpt_nums = [ckpt_nums[-1]]
+    for ckpt_num in ckpt_nums:
+        print('============================================================')
+        print('Processing model', ckpt_num)
+        run_test(project, ckpt_num=ckpt_num)
+        plot_model_PCK(project, ckpt_num=ckpt_num)
+        plot_score_vs_accuracy(project=project, ckpt_num=ckpt_num)
+        print('============================================================')
+    return
 
 
 def parse_args():

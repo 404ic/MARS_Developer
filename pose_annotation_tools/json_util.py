@@ -303,3 +303,13 @@ def make_annot_dict(project):
         csv_to_dict(project)
     elif ext == '.manifest':
         manifest_to_dict(project)
+
+def make_annot_dict_AL(project, iteration):
+    annotation_file = os.path.join(project, 'annotation_data', str(iteration) + '_data.manifest')
+    if not os.path.exists(annotation_file):  # annotations file isn't where we expected it to be.
+        raise SystemExit("I couldn't find an annotation file at " + annotation_file)
+    _, ext = os.path.splitext(annotation_file)
+    if ext == '.csv':
+        csv_to_dict(project)
+    elif ext == '.manifest':
+        manifest_to_dict(project)

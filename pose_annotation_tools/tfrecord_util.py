@@ -60,6 +60,31 @@ def write_to_tfrecord(v_info, output_directory):
         num_shards=1, num_threads=1, shuffle=True
     )
 
+def write_to_tfrecord_AL(v_info, output_directory, train_length):
+    data = v_info
+    train_data = data[:train_length]
+    test_data = data[train_length:]
+    n_shards = int(math.ceil(len(train_data) / 1000))
+    n_threads = n_shards if n_shards <= multiprocessing.cpu_count() else (n_shards / smallest_factor(n_shards))
+    n_threads = int(n_threads)
+    n_shards = int(n_shards)
+    create(
+        dataset=train_data,
+        dataset_name='train_dataset',
+        output_directory=output_directory,
+        num_shards=n_shards,
+        num_threads=n_threads,
+        shuffle=True
+    )
+    create(
+        dataset=test_data,
+        dataset_name='test_dataset',
+        output_directory=output_directory,
+        num_shards=n_shards,
+        num_threads=n_threads,
+        shuffle=True
+    )
+
 
 # creating the tfrecord files ------------------------------------------------------------------------------------------
 # Create the tfrecord files for a dataset. This code is modified from https://github.com/visipedia/tfrecords
