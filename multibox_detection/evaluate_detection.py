@@ -175,7 +175,7 @@ def pr_curve(project, detector_names=None):
         plt.legend(loc='best')
         plt.xlim([-0.01, 1.01])
         plt.ylim([-0.01, 1.01])
-        plt.savefig(os.path.join(project, 'detection', model + '_evaluation',  'PR_curves.pdf'))
+        plt.savefig(os.path.join(project, 'detection', model + '_evaluation',  'PR_curves.png'))
         plt.show()
 
 
@@ -239,8 +239,8 @@ def find_best_checkpoint(project, model, decay=0.99975, burnIn=1000):
 
     # params = {'burnIn': burnIn, 'decay': decay}
     # return steps, vals, ckpt_steps, min_step, params
-
-    return 1, 1, 1, sorted(glob.glob(os.path.join(project, 'detection', model + '_log', '*')))[-1].split('-')[1].split('.')[0], 1
+    min_step = int(sorted(glob.glob(os.path.join(project, 'detection', model + '_log', '*.meta')), key=lambda x: int(x.split('/')[-1].split('-')[-1].split('.')[0]))[-1].split('/')[-1].split('-')[-1].split('.')[0])
+    return 1, 1, 1, min_step, 1
 
 
 def save_best_checkpoint(project, detector_names=None):
@@ -271,7 +271,7 @@ def save_best_checkpoint(project, detector_names=None):
 
         with open(os.path.join(model_path,'checkpoint'), 'w') as f:
             f.write('model_checkpoint_path: "' + os.path.join(model_path,'model.ckpt-' + model_str) + '"')
-        print('Saved best-performing checkpoint for model "' + model + '."')
+        print('Saved best-performing checkpoint for model "' + model + '. (This actually just finds the last model.)"')
 
 
 def plot_training_progress(project, detector_names=None, figsize=(14, 6), logTime=False, omitFirst=0):
@@ -425,7 +425,7 @@ def evaluation(tfrecords, bbox_priors, summary_dir, checkpoint_path, num_images,
                 print("Found model for global step: {:d}".format(global_step))
 
                 step = 0
-                img_id = 0
+                # img_id = 0
                 print_str = ', '.join(['Step: {:d}', 'Time/image (ms): {:.1f}'])
 
                 while not coord.should_stop():
@@ -439,7 +439,7 @@ def evaluation(tfrecords, bbox_priors, summary_dir, checkpoint_path, num_images,
                         gt_bboxes = outputs[2][b]
                         gt_num_bboxes = outputs[3][b]
                         gt_areas = outputs[4][b]
-                        # img_id = int(outputs[5][b])
+                        img_id = str(outputs[5][b])[2:-1]
                         # everything in this file up to here is more or less identical to evaluate_pose---
 
                         predicted_bboxes = locs + bbox_priors
@@ -483,7 +483,7 @@ def evaluation(tfrecords, bbox_priors, summary_dir, checkpoint_path, num_images,
                             gt_annotation_id += 1
 
                         dataset_image_ids.add(img_id)
-                        img_id += 1
+                        # img_id += 1
 
                     # print(print_str.format(step, (dt / cfg.BATCH_SIZE) * 1000))
                     step += 1

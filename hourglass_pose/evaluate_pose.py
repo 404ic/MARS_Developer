@@ -36,7 +36,7 @@ from tensorboard.backend.event_processing import event_accumulator
 deprecation._PRINT_DEPRECATION_WARNINGS = False
 
 
-def coco_eval(project, pose_model_names=None, view=None, fixedSigma=None, ckpt_num=None):
+def coco_eval(project, pose_model_names=None, view=None, fixedSigma=None, ckpt_num=None, iteration=None):
     config_fid = os.path.join(project,'project_config.yaml')
     with open(config_fid) as f:
         cfg = yaml.load(f, Loader=yaml.FullLoader)
@@ -54,6 +54,8 @@ def coco_eval(project, pose_model_names=None, view=None, fixedSigma=None, ckpt_n
             print('ERROR: coco_eval - ckpt_num should not be None')
             return
         infile = os.path.join(project, 'pose', model+'_evaluation', str(ckpt_num) + '_performance_pose.json')
+        if iteration is not None:
+            infile = os.path.join(project, 'pose', model+'_evaluation', str(ckpt_num) + '_performance_pose_iteration_' + str(iteration) + '.json')
         with open(infile) as jsonfile:
             cocodata = json.load(jsonfile)
         gt_keypoints = cocodata['gt_keypoints']
@@ -149,8 +151,9 @@ def plot_frame(project, frame_num, pose_model_names=None, markersize=8, figsize=
 
         ax.legend(prop={'size': 14})
         ax.title.set_text('Frame ' + str(matched_id) + ' with score of ' + str(pred[0]['score']))
-        title = 'frame_' + str(matched_id) + '_model_' + perf_pose.split('/')[-1].split('_')[0] + '.png'
+        # title = 'frame_' + str(matched_id) + '_model_' + perf_pose.split('/')[-1].split('_')[0] + '.png'
         # fig.savefig(os.path.join(project, 'pose', 'worst_frames', title))
+        fig.savefig('frame.png')
         return ax
 
 def compute_oks_histogram(cocoEval, bins=[]):
@@ -204,7 +207,7 @@ def plot_model_PCK(project, performance=None, pose_model_names=None, xlim=None, 
         pose_model_names = list(pose_model_list.keys())
 
     if not performance:
-        performance = coco_eval(project, pose_model_names=pose_model_names, ckpt_num=ckpt_num)
+        performance = coco_eval(project, pose_model_names=pose_model_names, ckpt_num=ckpt_num, iteration = iteration)
 
     nKpts = len(cfg['keypoints'])
     fig, ax = plt.subplots(math.ceil(nKpts / 4), 4, figsize=(15, 4 * math.ceil(nKpts / 4)))
@@ -730,7 +733,7 @@ def evaluation(tfrecords, summary_dir, checkpoint_path, cfg,
                 if tf.io.gfile.isdir(checkpoint_path):
                     checkpoint_path = tf.train.latest_checkpoint(checkpoint_path)
                     if ckpt_num is not None:
-                        checkpoint_path = '/home/ericma/Documents/reproduce_pose/pose/top_log/model.ckpt-' + str(ckpt_num)
+                        checkpoint_path = '/home/ericma/Documents/active_learning/pose/top_log/model.ckpt-' + str(ckpt_num)
                     else:
                         print('MUST CALL WITH CHECKPOINT NUMBER')
                         return
@@ -946,7 +949,7 @@ def evaluation(tfrecords, summary_dir, checkpoint_path, cfg,
                 with open(os.path.join(summary_dir, str(ckpt_num) + '_performance_pose.json'), 'w') as jsonfile:
                     json.dump(cocodata, jsonfile)
             else:
-                with open(os.path.join(summary_dir, str(ckpt_num) + '_performance_pose_iteration' + str(iteration) + '.json'), 'w') as jsonfile:
+                with open(os.path.join(summary_dir, str(ckpt_num) + '_performance_pose_iteration_' + str(iteration) + '.json'), 'w') as jsonfile:
                     json.dump(cocodata, jsonfile)
 
 
@@ -975,7 +978,7 @@ def run_test(project, pose_model_names=None, num_images=0, show_heatmaps=False, 
                 print("Couldn't find a saved model for " + model + ", using latest training checkpoint instead.")
 
         tf_dir = os.path.join(project, 'pose', model + '_tfrecords_pose')
-        tfrecords = glob.glob(os.path.join(tf_dir, 'test_dataset-*'))
+        tfrecords = glob.glob(os.path.join(tf_dir, 'test_dataset-*')) # MAKE SURE TO CHANGE THIS
 
         summary_dir = os.path.join(project, 'pose', model + '_evaluation')
         if not os.path.isdir(summary_dir):
@@ -995,10 +998,10 @@ def run_test(project, pose_model_names=None, num_images=0, show_heatmaps=False, 
             show_layer_heatmaps=False,
             cfg=cfg,
             ckpt_num=ckpt_num,
-            iteration=None
+            iteration=iteration
         )
 
-        performance[model] = coco_eval(project, pose_model_names=pose_model_names, ckpt_num=ckpt_num)
+        performance[model] = coco_eval(project, pose_model_names=pose_model_names, ckpt_num=ckpt_num, iteration=iteration)
 
     return performance
 
@@ -1012,10 +1015,10 @@ def clean_coords(x):
     return y
 
 def distance_between_keypoints(a, b):
-    return np.sqrt(np.sum(np.square(np.array(clean_coords[a]) - np.array(clean_coords[b]))))
+    return np.sqrt(np.sum(np.square(np.array(clean_coords(a)) - np.array(clean_coords(b)))))
 
 def plot_score_vs_accuracy(project, ckpt_num, iteration=None):
-    infile = os.path.join(project, 'pose', 'top_evaluation', str(ckpt_num) + '_performance_pose.json')
+    infile = os.path.join(project, 'pose', 'top_evaluation', str(ckpt_num) + '_performance_pose_iteration_' + str(iteration) + '.json')
     with open(infile) as jsonfile:
         D = json.load(jsonfile)
 

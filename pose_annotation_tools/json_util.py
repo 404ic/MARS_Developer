@@ -5,6 +5,7 @@ from PIL import Image
 import json
 from scipy.spatial.distance import cdist
 import yaml
+from glob import glob
 
 
 def count_workers(data):
@@ -42,7 +43,11 @@ def manifest_to_dict(project):
     config_fid = os.path.join(project,'project_config.yaml')
     with open(config_fid) as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
-    manifest_file  = config['manifest_name']
+    manifest_file  = config['manifest_name'] # NEED TO CHANGE THIS LINE
+    if manifest_file == 'all_data.manifest':
+        manifest_files = glob(os.path.join(project, 'annotation_data', '?_data.manifest'))
+        manifest_files.sort()
+        _, manifest_file = os.path.split(manifest_files[-1])
     save_file      = os.path.join(project,'annotation_data','processed_keypoints.json')
     animal_names   = config['animal_names'] if config['animal_names'] else config['species']
     species        = config['species']
@@ -53,7 +58,9 @@ def manifest_to_dict(project):
     fid = open(os.path.join(project, 'annotation_data', manifest_file), 'r')
     data = []
     i = 0
+    print(manifest_file)
     for line in fid:
+        # print(line)
         data.append(json.loads(line))
     nWorkers = count_workers(data)
     nSamp = len(data)

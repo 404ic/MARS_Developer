@@ -62,8 +62,12 @@ def write_to_tfrecord(v_info, output_directory):
 
 def write_to_tfrecord_AL(v_info, output_directory, train_length):
     data = v_info
-    train_data = data[:train_length]
+    # with open('/home/ericma/Documents/active_learning/pose/top_evaluation/v_info_tfrecord.json', 'w') as f:
+    #     json.dump(data, f)
     test_data = data[train_length:]
+    train_data = data[:train_length]
+    print(len(train_data))
+    print(len(test_data))
     n_shards = int(math.ceil(len(train_data) / 1000))
     n_threads = n_shards if n_shards <= multiprocessing.cpu_count() else (n_shards / smallest_factor(n_shards))
     n_threads = int(n_threads)
@@ -441,7 +445,7 @@ def prep_records_detection(D, mouse_list):
                        "label": 0,
                        "text": '',
                    },
-                   'id': format(i, '06d'),
+                   'id': format(int(D[i]['image'].split('/')[-1].split('_')[-1].split('.')[0]), '06d'), # CHANGE MADE HERE
                    'width': D[i]['width'],
                    'height': D[i]['height'],
                    'object': {'area': [D[i]['ann_' + n]['area'] for n in mouse_list],
@@ -453,6 +457,8 @@ def prep_records_detection(D, mouse_list):
                                   'label': [0]*len(mouse_list),
                                   'count': len(mouse_list)}}}
         v_info.append(i_frame)
+    # with open('/home/ericma/Documents/active_learning_detection_debug/debug.json', 'w') as f:
+    #     json.dump(v_info, f)
     return v_info
 
 
@@ -467,7 +473,7 @@ def prep_records_pose(D, mouse_list):
             pts[mouse] = D[i]['ann_' + mouse]['med']
 
         i_frame = {'filename': D[i]['image'],
-                   'id': format(i, '06d'),
+                   'id': format(int(D[i]['image'].split('/')[-1].split('_')[-1].split('.')[0]), '06d'), # CHANGE MADE HERE
                    "class": {"label": 0, "text": '', },
                    'width': D[i]['width'],
                    'height': D[i]['height'],

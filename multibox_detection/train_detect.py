@@ -243,19 +243,19 @@ def train(tfrecords_train, tfrecords_val, bbox_priors, logdir, cfg, pretrained_m
             cfg=cfg
         )
 
-        print('VAL CHANGE HERE')
-        batched_images_val, batched_bboxes_val, batched_num_bboxes_val, image_ids_val = inputs.input_nodes(
-            tfrecords=tfrecords_val,
-            max_num_bboxes=cfg.MAX_NUM_BBOXES,
-            num_epochs=None,
-            batch_size=cfg.BATCH_SIZE,
-            num_threads=cfg.NUM_INPUT_THREADS,
-            capacity=cfg.QUEUE_CAPACITY,
-            min_after_dequeue=cfg.QUEUE_MIN,
-            add_summaries=True,
-            shuffle_batch=True,
-            cfg=cfg
-        )
+        # print('VAL CHANGE HERE')
+        # batched_images_val, batched_bboxes_val, batched_num_bboxes_val, image_ids_val = inputs.input_nodes(
+        #     tfrecords=tfrecords_val,
+        #     max_num_bboxes=cfg.MAX_NUM_BBOXES,
+        #     num_epochs=None,
+        #     batch_size=cfg.BATCH_SIZE,
+        #     num_threads=cfg.NUM_INPUT_THREADS,
+        #     capacity=cfg.QUEUE_CAPACITY,
+        #     min_after_dequeue=cfg.QUEUE_MIN,
+        #     add_summaries=True,
+        #     shuffle_batch=True,
+        #     cfg=cfg
+        # )
 
         input_summaries = copy.copy(tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.SUMMARIES))
 
@@ -266,8 +266,8 @@ def train(tfrecords_train, tfrecords_val, bbox_priors, logdir, cfg, pretrained_m
             trainable_vars = [v for v_name, v in detection_vars.items() if v_name in all_trainable_var_names]
         else:
             locs, confs, inception_vars = build_fully_trainable_model(batched_images, cfg)
-            print('VAL CHANGE HERE')
-            locs_v, confs_v, inception_vars_v = build_fully_trainable_model(batched_images_val, cfg, is_training=False)
+            # print('VAL CHANGE HERE')
+            # locs_v, confs_v, inception_vars_v = build_fully_trainable_model(batched_images_val, cfg, is_training=False)
             trainable_vars = tf.compat.v1.trainable_variables()
 
         location_loss, confidence_loss = loss.add_loss(
@@ -280,17 +280,17 @@ def train(tfrecords_train, tfrecords_val, bbox_priors, logdir, cfg, pretrained_m
         )
 
         total_loss = tf.compat.v1.losses.get_total_loss()
-        print('VAL CHANGE HERE')
-        val_loss, confidence_loss_val = loss.compute_loss(
-            locations=locs_v,
-            confidences=confs_v,
-            batched_bboxes=batched_bboxes_val,
-            batched_num_bboxes=batched_num_bboxes_val,
-            bbox_priors=bbox_priors,
-            location_loss_alpha=cfg.LOCATION_LOSS_ALPHA,
-            batch_size=locs_v.get_shape().as_list()[0]
-        )
-        tf.compat.v1.losses.add_loss(val_loss, loss_collection='validation')
+        # print('VAL CHANGE HERE')
+        # val_loss, confidence_loss_val = loss.compute_loss(
+        #     locations=locs_v,
+        #     confidences=confs_v,
+        #     batched_bboxes=batched_bboxes_val,
+        #     batched_num_bboxes=batched_num_bboxes_val,
+        #     bbox_priors=bbox_priors,
+        #     location_loss_alpha=cfg.LOCATION_LOSS_ALPHA,
+        #     batch_size=locs_v.get_shape().as_list()[0]
+        # )
+        # tf.compat.v1.losses.add_loss(val_loss, loss_collection='validation')
 
         # Track the moving averages of all trainable variables.
         # At test time we'll restore all variables with the average value
@@ -334,8 +334,8 @@ def train(tfrecords_train, tfrecords_val, bbox_priors, logdir, cfg, pretrained_m
             keep_checkpoint_every_n_hours=cfg.KEEP_CHECKPOINT_EVERY_N_HOURS
         )
 
-        VALIDATION_INTERVAL = 500  # validate every 1000 steps
-        print('CHANGES MADE AGAIN AND AGAIN')
+        # VALIDATION_INTERVAL = 500  # validate every 1000 steps
+        # print('CHANGES MADE AGAIN (and another one!)')
         # def train_step_fn(sess, train_op, global_step, train_step_kwargs):
         #     train_step_fn.step += 1  # or use global_step.eval(session=sess)
 

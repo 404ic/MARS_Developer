@@ -14,7 +14,7 @@ from multibox_detection.config import *
 
 
 def plot_curve(path, log_path):
-    save_name = path + 'pr_curve'
+    save_name = path
     with open(log_path, 'rb') as fp: cocoEval = pickle.load(fp)
     print('loaded')
 
@@ -42,12 +42,11 @@ def plot_curve(path, log_path):
     # plt.legend(bbox_to_anchor=(1.1, 0.85),fontsize=12)
     plt.xlim([-0.01, 1.01])
     plt.ylim([-0.01, 1.01])
-    plt.savefig(save_name+'.png')
-    plt.savefig(save_name+'.pdf')
+    plt.savefig(save_name)
     plt.show()
 
 
-def prcurve(project, detector_names=[], max_training_steps=None, debug_output=False):
+def prcurve(project, detector_names=[], max_training_steps=None, debug_output=False, log_path=None, save_path=None):
     # load project config
     config_fid = os.path.join(project, 'project_config.yaml')
     with open(config_fid) as f:
@@ -67,8 +66,10 @@ def prcurve(project, detector_names=[], max_training_steps=None, debug_output=Fa
         logdir = os.path.join(project, 'detection', detector + '_log')
         if not os.path.isdir(logdir):
             os.mkdir(logdir)
-        log_path = os.path.join(project, 'detection', detector + '_tfrecords_detection', 'cocoEval.pkl')
-        save_path = os.path.join(project, 'detection')
+        if log_path is None:
+            log_path = os.path.join(project, 'detection', detector + '_tfrecords_detection', 'cocoEval.pkl')
+        if save_path is None:
+            save_path = os.path.join(project, 'detection')
         plot_curve(
             path=save_path,
             log_path=log_path

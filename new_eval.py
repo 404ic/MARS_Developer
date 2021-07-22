@@ -242,7 +242,7 @@ def eval(tfrecords, bbox_priors, summary_dir, checkpoint_path, max_iterations, c
       summary = tf.compat.v1.Summary()
       summary.ParseFromString(sess.run(summary_op))
 
-      with open(summary_dir + 'cocoEval.pkl', 'wb') as fp:
+      with open(os.path.join(summary_dir, 'cocoEval.pkl'), 'wb') as fp:
         pickle.dump(cocoEval, fp)
 
       for line in captured_stdout.getvalue().split('\n'):
@@ -287,11 +287,12 @@ def run_evaluation(project, detector_names=[], max_training_steps=None, debug_ou
         with open(priors_fid, 'rb') as f:
             bbox_priors = pickle.load(f, encoding='latin1')
         bbox_priors = np.array(bbox_priors).astype(np.float32)
+        summary_dir = os.path.join(project, 'detection')
 
         eval(
             tfrecords=tfrecords_test,
             bbox_priors=bbox_priors,
-            summary_dir=tf_dir,
+            summary_dir=summary_dir,
             checkpoint_path=logdir,
             max_iterations=0,
             cfg=train_cfg
