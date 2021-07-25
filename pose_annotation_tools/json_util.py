@@ -44,9 +44,10 @@ def manifest_to_dict(project):
     with open(config_fid) as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
     manifest_file  = config['manifest_name'] # NEED TO CHANGE THIS LINE
-    if manifest_file == 'all_data.manifest':
-        manifest_files = glob(os.path.join(project, 'annotation_data', '?_data.manifest'))
-        manifest_files.sort()
+    if manifest_file == 'all_train_data.manifest':
+        manifest_files = glob(os.path.join(project, 'annotation_data', '?_data.manifest')) + glob(os.path.join(project, 'annotation_data', '??_data.manifest'))
+        manifest_files.sort(key=lambda x: int(x.split('/')[-1].split('_')[0]))
+        print(manifest_files)
         _, manifest_file = os.path.split(manifest_files[-1])
     save_file      = os.path.join(project,'annotation_data','processed_keypoints.json')
     animal_names   = config['animal_names'] if config['animal_names'] else config['species']

@@ -36,7 +36,7 @@ def AL_rename_detector(project, iteration):
     os.rename(os.path.join(detection_dir, 'black_top_tfrecords_detection'), os.path.join(detection_dir, 'black_top_tfrecords_detection_iteration_' + str(iteration)))
 
 
-def AL_detector_choose_worst_images(project, iteration, num=10): # NEED TO CHANGE NUM=100 LATER
+def AL_detector_choose_worst_images(project, iteration, num=500): # NEED TO CHANGE NUM=100 LATER
     infile = os.path.join(project, 'detection', 'black_top_evaluation', 'performance_detection_iteration_' + str(iteration) + '.json')
     with open(infile) as jsonfile:
         D = json.load(jsonfile)
@@ -63,7 +63,7 @@ def AL_train_iteration_detection(project, iteration, frames_so_far, frames_to_ad
     '''
     frames_used_this_iteration = []
     if iteration == 0:
-        frames_used_this_iteration = process_active_learning_data(project, frames_included=[], frames_to_add=[], iteration=0, init_batch=100)
+        frames_used_this_iteration = process_active_learning_data(project, frames_included=[], frames_to_add=[], iteration=0, init_batch=500)
     else:
         frames_used_this_iteration = process_active_learning_data(project, frames_included=frames_so_far, frames_to_add=frames_to_add, iteration=iteration)
     print('Beginning training for iteration', iteration)
@@ -108,7 +108,7 @@ if __name__ == '__main__':
     '''  
     After creating a project, you will need:
     1. Add images to /project/annotation_data/raw_images/
-    2. Title your manifest file 'all_data.manifest' and put it in /project/annotation_data/
+    2. Title your manifest file 'all_train_data.manifest' and put it in /project/annotation_data/
     I think that's it. 
     '''
     project = '/home/ericma/Documents/active_learning_detection_debug'

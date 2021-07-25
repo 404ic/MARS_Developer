@@ -215,11 +215,11 @@ def annotation_postprocessing(project):
     make_project_priors(project)
     
 
-def process_active_learning_data(project, frames_included=[], frames_to_add=[],iteration=0, init_batch=100):
+def process_active_learning_data(project, frames_included=[], frames_to_add=[],iteration=0, init_batch=500):
     """
     Give a .manifest file in /project/annotation_data, create the tfrecord files 
     """
-    all_data_path = os.path.join(project, 'annotation_data', 'all_data.manifest')
+    all_data_path = os.path.join(project, 'annotation_data', 'all_train_data.manifest')
     with open(all_data_path ) as f:
         frames = f.read().splitlines()
     if not frames_included:
@@ -241,6 +241,7 @@ def process_active_learning_data(project, frames_included=[], frames_to_add=[],i
         output.write(ex)
         output.write('\n')
     print('=================')
+    print('Overlap between worst frames and trained frames from last iteration.')
     print(list(set(frames_included) & set(frames_to_add)))
     print('=================')
 
